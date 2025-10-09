@@ -1,0 +1,23 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Model artifacts and checkpoints
+artifacts/
+
+# Virtual environments
+.venv/
+env/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Kaggle API token
+kaggle.json
+
+# Local data (keep only structured subsets if needed)
+data/
