@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -19,9 +19,9 @@ from ..utils.metrics import accuracy, compute_classification_report, compute_con
 @dataclass
 class TrainConfig:
     data: DataConfig
-    loss: LossConfig = LossConfig()
-    optim: OptimConfig = OptimConfig()
-    scheduler: SchedulerConfig = SchedulerConfig()
+    loss: LossConfig = field(default_factory=LossConfig)
+    optim: OptimConfig = field(default_factory=OptimConfig)
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     epochs: int = 15
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     log_every: int = 20
