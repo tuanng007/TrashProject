@@ -15,9 +15,9 @@
 4. (Tùy chọn) Tải TrashNet trực tiếp trong notebook:
    ```bash
    %cd /content/TrashProject
-   !python scripts/download_trashnet.py --output-dir data/raw/trashnet
+   !python scripts/download_trashnet.py --output-dir data/raw
    ```
-   Thư mục sau khi tải xong có dạng `data/raw/trashnet/<class_name>/*.jpg`.
+   Thư mục sau khi tải xong có dạng `data/raw/<class_name>/*.jpg`.
 5. Nếu sử dụng dataset khác (TACO, dữ liệu riêng), copy vào `data/raw` với cấu trúc thư mục theo lớp.
 6. Chạy cell chia dữ liệu thành `train/val/test`.
 7. Cấu hình huấn luyện (batch size, epochs, model_name, loss, scheduler...).
