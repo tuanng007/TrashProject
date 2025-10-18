@@ -1,50 +1,46 @@
-# Hướng dẫn chạy dự án trên Google Colab
+# H??ng d?n ch?y d? ?n tr?n Google Colab
 
-## 1. Chuẩn bị trước khi lên Colab
+## 1. Chu?n b? tr??c khi l?n Colab
 
-- **Mã nguồn**: đồng bộ thư mục dự án `TrashProject/` lên GitHub hoặc nén `.zip` để tải lên Google Drive.
-- **Dữ liệu**: chuẩn bị cấu trúc `data/raw/<class_name>/*.jpg`. Nếu dùng bộ TrashNet/TACO, tải trước để kiểm tra chất lượng ảnh.
-- **Thông tin nhãn**: đảm bảo tên thư mục khớp với nhãn sử dụng trong báo cáo và code.
-- **GPU**: vào `Runtime → Change runtime type` và chọn GPU (L4/T4/A100 tùy tài khoản).
+- **M? ngu?n**: ??ng b? th? m?c d? ?n `TrashProject/` l?n GitHub ho?c n?n `.zip` ?? t?i l?n Google Drive.
+- **D? li?u**: chu?n b? c?u tr?c `data/raw/<class_name>/*.jpg`. N?u d?ng b? TrashNet/TACO, t?i tr??c ?? ki?m tra ch?t l??ng ?nh.
+- **Th?ng tin nh?n**: ??m b?o t?n th? m?c kh?p v?i nh?n s? d?ng trong b?o c?o v? code.
+- **GPU**: v?o `Runtime ? Change runtime type` v? ch?n GPU (L4/T4/A100 t?y t?i kho?n).
 
-## 2. Các bước chạy notebook `notebooks/trash_classifier_colab.ipynb`
+## 2. C?c b??c ch?y notebook `notebooks/trash_classifier_colab.ipynb`
 
-1. Mount Google Drive nếu dữ liệu hoặc mô hình lưu trên Drive.
-2. Cài đặt thư viện bằng cell `pip install -r requirements.txt` (Torch, Albumentations, Gradio, scikit-learn...).
-3. Clone dự án từ GitHub (hoặc unzip từ Drive) vào `/content/TrashProject`.
-4. (Tùy chọn) Tải TrashNet trực tiếp trong notebook:
-   ```bash
-   %cd /content/TrashProject
-   !python scripts/download_trashnet.py --output-dir data/raw
-   ```
-   Thư mục sau khi tải xong có dạng `data/raw/<class_name>/*.jpg`.
-5. Nếu sử dụng dataset khác (TACO, dữ liệu riêng), copy vào `data/raw` với cấu trúc thư mục theo lớp.
-6. Chạy cell chia dữ liệu thành `train/val/test`.
-7. Cấu hình huấn luyện (batch size, epochs, model_name, loss, scheduler...).
-8. Gọi `trainer.train()` để bắt đầu huấn luyện và theo dõi log trực tiếp trên Colab.
-9. Sau khi hoàn tất, hiển thị báo cáo và confusion matrix để đánh giá mô hình.
-10. Chạy cell Gradio để tạo demo upload ảnh. Đặt `share=True` nếu muốn sinh link truy cập tạm thời.
+1. Mount Google Drive n?u d? li?u ho?c m? h?nh l?u tr?n Drive.
+2. C?i ??t th? vi?n b?ng cell `pip install ?` (Torch, Albumentations, Gradio, scikit-learn...).
+3. Ch?y cell **Ki?m tra t?i nguy?n** ?? x?c nh?n GPU, RAM v? dung l??ng tr?ng tr??c khi hu?n luy?n.
+4. Clone d? ?n t? GitHub (ho?c unzip t? Drive) v?o `/content/TrashProject`.
+5. (T?y ch?n) T?i TrashNet ho?c dataset c?ng khai kh?c; n?u d?ng d? li?u ri?ng th? copy v?o `data/raw/<class_name>/`.
+6. Ch?y cell chia d? li?u th?nh `train/val/test`.
+7. ? cell **Kh?i t?o c?u h?nh hu?n luy?n**, ?i?n `MODEL_LIST` d?ng danh s?ch ph?n t?ch b?i d?u ph?y (v? d? `resnet18, efficientnetb0`), ?i?u ch?nh batch size, epochs, loss, scheduler, c?c tham s? ??ng b?ng backbone?
+8. Ch?y cell **Hu?n luy?n v? so s?nh m? h?nh** ?? l?n l??t fine-tune c?c ki?n tr?c ?? ch?n, xem b?ng t?ng h?p Accuracy/Precision/Recall/F1 tr?n t?p test v? m? h?nh t?t nh?t theo `SELECT_MODEL_METRIC`.
+9. D?ng cell **B?o c?o chi ti?t** ?? hi?n th? ??y ?? precision/recall/F1 theo t?ng l?p v? macro average cho m? h?nh t?t nh?t.
+10. Quan s?t cell **Hi?n th? ma tr?n nh?m l?n** nh?m ph?n t?ch c?c l?p c?n d? nh?m.
+11. (T?y ch?n) Ch?y cell Gradio ?? d?ng demo ph?n lo?i ?nh r?c; ??t `share=True` n?u mu?n t?o ???ng link t?m th?i.
 
-## 3. Lưu và tải trọng số mô hình
+## 3. L?u v? t?i tr?ng s? m? h?nh
 
-- Trọng số tốt nhất nằm ở `artifacts/best.pt`. Sao chép về Drive để lưu trữ lâu dài.
-- Các file bổ trợ:
-  - `artifacts/history.pth`: log loss/accuracy theo epoch.
-  - `artifacts/classification_report.pth`: dict chứa Precision/Recall/F1.
-  - `artifacts/confusion_matrix.pth`: ma trận nhầm lẫn.
+- M?i m? h?nh s? l?u artifact ri?ng trong `artifacts/<model_name>/best.pt`. Sao ch?p file n?y v? Drive ?? l?u tr? d?i h?n.
+- C?c file b? tr? trong c?ng th? m?c:
+  - `history.pth`: log loss/accuracy theo epoch.
+  - `classification_report.pth`: dict ch?a Precision/Recall/F1.
+  - `confusion_matrix.pth`: ma tr?n nh?m l?n.
 
-## 4. Checklist đánh giá
+## 4. Checklist ??nh gi?
 
-- [ ] Accuracy trên tập test đạt hoặc vượt mục tiêu (ví dụ 85%).
-- [ ] Macro F1 từng lớp được báo cáo rõ ràng.
-- [ ] Confusion matrix phân tách được các lớp bị nhầm lẫn nhiều.
-- [ ] Nếu dữ liệu mất cân bằng, so sánh CrossEntropy và FocalLoss.
-- [ ] So sánh ít nhất 2 kiến trúc (ResNet18, EfficientNet-B0, ViT) kèm thời gian huấn luyện và độ chính xác.
+- [ ] Accuracy tr?n t?p test ??t ho?c v??t m?c ti?u (v? d? 85%).
+- [ ] Macro F1 t?ng l?p v? b?ng t?ng h?p ?? ???c xu?t t? cell b?o c?o.
+- [ ] ??c confusion matrix ?? ghi ch? c?c l?p c?n nh?m l?n.
+- [ ] N?u d? li?u m?t c?n b?ng, so s?nh CrossEntropy v? FocalLoss ho?c c?n nh?c class weighting.
+- [ ] So s?nh ?t nh?t 2 ki?n tr?c (ResNet18, EfficientNet-B0, MobileNetV3, ViT?) k?m th?i gian hu?n luy?n v? ?? ch?nh x?c, ghi l?i l? do ch?n m? h?nh cu?i.
 
-## 5. Gợi ý mở rộng dự án
+## 5. G?i ? m? r?ng d? ?n
 
-- Thu thập thêm ảnh thực tế để cải thiện độ tổng quát.
-- Kết hợp Mixup/CutMix cho tập train nếu có nhiều chủng loại vật thể.
-- Thử Grid Search hoặc Optuna cho learning rate và batch size.
-- Dùng Grad-CAM để minh họa vùng mô hình chú ý trong báo cáo.
-- Nếu cần nhận dạng nhiều vật thể trong cùng ảnh, cân nhắc pipeline detection + classification.
+- Thu th?p th?m ?nh th?c t? ?? c?i thi?n ?? t?ng qu?t.
+- K?t h?p Mixup/CutMix cho t?p train n?u c? nhi?u ch?ng lo?i v?t th?.
+- Th? Grid Search ho?c Optuna cho learning rate v? batch size.
+- D?ng Grad-CAM ?? minh h?a v?ng m? h?nh ch? ? trong b?o c?o.
+- N?u c?n nh?n d?ng nhi?u v?t th? trong c?ng ?nh, c?n nh?c pipeline detection + classification.
