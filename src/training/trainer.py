@@ -49,6 +49,11 @@ def build_model(name: str, num_classes: int) -> nn.Module:
         model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
         model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, num_classes)
         return model
+    if name in {"vitb16", "vit_b16"}:
+        model = models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_V1)
+        in_features = model.heads.head.in_features
+        model.heads.head = nn.Linear(in_features, num_classes)
+        return model
     raise ValueError(f"Unsupported model: {name}")
 
 
