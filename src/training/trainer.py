@@ -70,8 +70,10 @@ class WasteTrainer:
         self.idx_to_class = {idx: cls for cls, idx in self.class_to_idx.items()}
         self.model = build_model(config.model_name, len(self.class_to_idx)).to(self.device)
         if config.freeze_backbone_epochs > 0:
+            # Freeze backbone, giữ lại head để fine-tune
+            head_keywords = ("fc", "classifier", "head")
             for name, param in self.model.named_parameters():
-                if "fc" not in name and "classifier" not in name:
+                if not any(keyword in name for keyword in head_keywords):
                     param.requires_grad = False
         self.criterion = build_loss(config.loss, class_counts=self._count_classes())
         self.optimizer = build_optimizer(self.model, config.optim)
