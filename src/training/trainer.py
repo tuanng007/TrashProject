@@ -29,6 +29,10 @@ class TrainConfig:
     output_dir: Path = Path("artifacts")
     model_name: str = "resnet18"
     freeze_backbone_epochs: int = 0
+    use_mixup: bool = False
+    use_cutmix: bool = False
+    mixup_alpha: float = 0.4
+    cutmix_alpha: float = 1.0
 
 
 def build_model(name: str, num_classes: int) -> nn.Module:
@@ -85,6 +89,54 @@ class WasteTrainer:
             counts[label] += 1
         return counts
 
+    def _mixup_data(
+        self, x: torch.Tensor, y: torch.Tensor, alpha: float
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, float]:
+        if alpha <= 0:
+            return x, y, y, 1.0
+        lam = torch._sample_dirichlet(torch.tensor([alpha, alpha])).max().item()
+        batch_size = x.size(0)
+        index = torch.randperm(batch_size, device=x.device)
+        mixed_x = lam * x + (1 - lam) * x[index, :]
+        y_a, y_b = y, y[index]
+        return mixed_x, y_a, y_b, lam
+
+    def _cutmix_data(
+        self, x: torch.Tensor, y: torch.Tensor, alpha: float
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, float]:
+        if alpha <= 0:
+            return x, y, y, 1.0
+        batch_size, _, h, w = x.size()
+        lam = torch._sample_dirichlet(torch.tensor([alpha, alpha])).max().item()
+        index = torch.randperm(batch_size, device=x.device)
+        cut_rat = (1.0 - lam) ** 0.5
+        cut_w = int(w * cut_rat)
+        cut_h = int(h * cut_rat)
+
+        cx = torch.randint(w, (1,), device=x.device).item()
+        cy = torch.randint(h, (1,), device=x.device).item()
+
+        x1 = max(cx - cut_w // 2, 0)
+        x2 = min(cx + cut_w // 2, w)
+        y1 = max(cy - cut_h // 2, 0)
+        y2 = min(cy + cut_h // 2, h)
+
+        x[:, :, y1:y2, x1:x2] = x[index, :, y1:y2, x1:x2]
+        lam = 1.0 - ((x2 - x1) * (y2 - y1) / (w * h))
+        y_a, y_b = y, y[index]
+        return x, y_a, y_b, lam
+
+    def _compute_loss(
+        self,
+        outputs: torch.Tensor,
+        y_a: torch.Tensor,
+        y_b: torch.Tensor,
+        lam: float,
+    ) -> torch.Tensor:
+        if lam == 1.0:
+            return self.criterion(outputs, y_a)
+        return lam * self.criterion(outputs, y_a) + (1.0 - lam) * self.criterion(outputs, y_b)
+
     def train(self) -> Tuple[Dict[str, float], Dict[str, float]]:
         best_acc = 0.0
         history = {"train_loss": [], "val_loss": [], "val_acc": []}
@@ -95,9 +147,21 @@ class WasteTrainer:
             running_loss = 0.0
             for batch_idx, (images, labels) in enumerate(self.train_loader):
                 images, labels = images.to(self.device), labels.to(self.device)
+                use_mixup = self.config.use_mixup and not self.config.use_cutmix
+                use_cutmix = self.config.use_cutmix
+                if use_mixup:
+                    images, labels_a, labels_b, lam = self._mixup_data(
+                        images, labels, self.config.mixup_alpha
+                    )
+                elif use_cutmix:
+                    images, labels_a, labels_b, lam = self._cutmix_data(
+                        images, labels, self.config.cutmix_alpha
+                    )
+                else:
+                    labels_a, labels_b, lam = labels, labels, 1.0
                 self.optimizer.zero_grad()
                 outputs = self.model(images)
-                loss = self.criterion(outputs, labels)
+                loss = self._compute_loss(outputs, labels_a, labels_b, lam)
                 loss.backward()
                 self.optimizer.step()
                 if self.scheduler and hasattr(self.scheduler, "step") and self.scheduler.__class__.__name__ == "OneCycleLR":

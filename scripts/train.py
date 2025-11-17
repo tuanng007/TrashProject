@@ -23,6 +23,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=15, help="Số epoch huấn luyện.")
     parser.add_argument("--model", type=str, default="resnet18", help="Tên mô hình (resnet18/mobilenetv3/efficientnetb0).")
     parser.add_argument("--loss", type=str, default="cross_entropy", help="Loại loss (cross_entropy/focal).")
+    parser.add_argument("--use-blur", action="store_true", help="Bật Gaussian blur trong augmentation train.")
+    parser.add_argument("--use-random-erasing", action="store_true", help="Bật RandomErasing (Cutout) sau khi normalize.")
+    parser.add_argument("--use-mixup", action="store_true", help="Bật Mixup trong vòng lặp huấn luyện.")
+    parser.add_argument("--use-cutmix", action="store_true", help="Bật CutMix trong vòng lặp huấn luyện.")
+    parser.add_argument("--mixup-alpha", type=float, default=0.4, help="Tham số alpha cho Mixup.")
+    parser.add_argument("--cutmix-alpha", type=float, default=1.0, help="Tham số alpha cho CutMix.")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate.")
     parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay.")
     parser.add_argument("--scheduler", type=str, default="onecycle", help="Scheduler (onecycle/cosine/step/none).")
@@ -41,6 +47,8 @@ def main() -> None:
         img_size=args.img_size,
         batch_size=args.batch_size,
         num_workers=4,
+        use_blur=args.use_blur,
+        use_random_erasing=args.use_random_erasing,
     )
 
     loss_cfg = LossConfig(name=args.loss)
@@ -56,6 +64,10 @@ def main() -> None:
         model_name=args.model,
         device=args.device,
         output_dir=args.output_dir,
+        use_mixup=args.use_mixup,
+        use_cutmix=args.use_cutmix,
+        mixup_alpha=args.mixup_alpha,
+        cutmix_alpha=args.cutmix_alpha,
     )
 
     trainer = WasteTrainer(train_cfg)

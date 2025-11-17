@@ -60,21 +60,37 @@ class DataConfig:
     img_size: int = 224
     batch_size: int = 32
     num_workers: int = 2
+    use_blur: bool = False
+    use_random_erasing: bool = False
 
 
-def default_transforms(img_size: int) -> Tuple[Callable, Callable, Callable]:
+def default_transforms(
+    img_size: int,
+    use_blur: bool = False,
+    use_random_erasing: bool = False,
+) -> Tuple[Callable, Callable, Callable]:
     """Return train/val/test transforms."""
-    train_tf = transforms.Compose(
+    train_transforms = [
+        transforms.Resize(int(img_size * 1.2)),
+        transforms.RandomResizedCrop(img_size),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(15),
+        transforms.ColorJitter(0.2, 0.2, 0.2, 0.1),
+    ]
+    if use_blur:
+        train_transforms.append(transforms.GaussianBlur(kernel_size=3))
+    train_transforms.extend(
         [
-            transforms.Resize(int(img_size * 1.2)),
-            transforms.RandomResizedCrop(img_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation(15),
-            transforms.ColorJitter(0.2, 0.2, 0.2, 0.1),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
         ]
     )
+    if use_random_erasing:
+        train_transforms.append(transforms.RandomErasing(p=0.5))
+    train_tf = transforms.Compose(train_transforms)
     eval_tf = transforms.Compose(
         [
             transforms.Resize(img_size),
@@ -88,9 +104,15 @@ def default_transforms(img_size: int) -> Tuple[Callable, Callable, Callable]:
 
 def create_dataloaders(
     config: DataConfig,
-    transforms_fn: Callable[[int], Tuple[Callable, Callable, Callable]] = default_transforms,
+    transforms_fn: Callable[[int], Tuple[Callable, Callable, Callable]] = None,
 ):
     """Create train/val/test dataloaders along with class mapping."""
+    if transforms_fn is None:
+        transforms_fn = lambda img_size: default_transforms(
+            img_size,
+            use_blur=config.use_blur,
+            use_random_erasing=config.use_random_erasing,
+        )
     train_tf, val_tf, test_tf = transforms_fn(config.img_size)
     train_dataset = WasteDataset(config.train_dir, transform=train_tf)
     val_dataset = WasteDataset(
@@ -125,4 +147,3 @@ def create_dataloaders(
     )
 
     return train_loader, val_loader, test_loader, train_dataset.class_to_idx
-
