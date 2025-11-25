@@ -42,7 +42,7 @@ def build_model(name: str, num_classes: int) -> nn.Module:
         model.fc = nn.Linear(model.fc.in_features, num_classes)
         return model
     if name == "mobilenetv3":
-        model = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.DEFAULT)
+        model = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.IMAGENET1K_V1)
         model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, num_classes)
         return model
     if name == "efficientnetb0":
