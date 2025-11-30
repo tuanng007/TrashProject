@@ -21,7 +21,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--img-size", type=int, default=224, help="Kích thước resize ảnh.")
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size.")
     parser.add_argument("--epochs", type=int, default=15, help="Số epoch huấn luyện.")
-    parser.add_argument("--model", type=str, default="resnet18", help="Tên mô hình (resnet18/mobilenetv3/efficientnetb0/vitb16).")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="resnet18",
+        help="Tên mô hình (resnet18/mobilenetv3[large]/efficientnetb0/vitb16).",
+    )
     parser.add_argument("--loss", type=str, default="cross_entropy", help="Loại loss (cross_entropy/focal).")
     parser.add_argument("--use-blur", action="store_true", help="Bật Gaussian blur trong augmentation train.")
     parser.add_argument("--use-random-erasing", action="store_true", help="Bật RandomErasing (Cutout) sau khi normalize.")
