@@ -35,6 +35,8 @@ class TrainConfig:
     mixup_alpha: float = 0.4
     cutmix_alpha: float = 1.0
     deterministic: bool = True
+    early_stop_patience: Optional[int] = None
+    early_stop_min_delta: float = 0.0
 
 
 def build_model(name: str, num_classes: int) -> nn.Module:
@@ -151,6 +153,7 @@ class WasteTrainer:
         best_acc = 0.0
         history = {"train_loss": [], "val_loss": [], "val_acc": []}
         global_step = 0
+        no_improve_epochs = 0
 
         for epoch in range(self.config.epochs):
             self.model.train()
@@ -193,14 +196,29 @@ class WasteTrainer:
             history["train_loss"].append(avg_train_loss)
             history["val_loss"].append(val_loss)
             history["val_acc"].append(val_acc)
-            if val_acc > best_acc:
+            improved = val_acc > best_acc + self.config.early_stop_min_delta
+            if improved:
                 best_acc = val_acc
+                no_improve_epochs = 0
                 self._save_checkpoint(epoch, best=True)
+            else:
+                no_improve_epochs += 1
             self._save_checkpoint(epoch, best=False)
 
             if epoch + 1 == self.config.freeze_backbone_epochs:
                 for param in self.model.parameters():
                     param.requires_grad = True
+
+            if (
+                self.config.early_stop_patience
+                and no_improve_epochs >= self.config.early_stop_patience
+            ):
+                print(
+                    f"Early stopping at epoch {epoch+1}: no improvement for "
+                    f"{self.config.early_stop_patience} epoch(s). "
+                    f"Best val acc: {best_acc:.4f}"
+                )
+                break
 
         report, cm = {}, None
         if self.test_loader is not None:

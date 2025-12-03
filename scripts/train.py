@@ -58,6 +58,18 @@ def parse_args() -> argparse.Namespace:
         help="Allow non-deterministic ops (avoid cuBLAS deterministic errors).",
     )
     parser.set_defaults(deterministic=True)
+    parser.add_argument(
+        "--early-stop-patience",
+        type=int,
+        default=0,
+        help="Stop early if no val acc improvement for this many epochs (0 disables).",
+    )
+    parser.add_argument(
+        "--early-stop-min-delta",
+        type=float,
+        default=0.0,
+        help="Minimum delta in val acc to count as improvement for early stopping.",
+    )
     return parser.parse_args()
 
 
@@ -95,6 +107,8 @@ def main() -> None:
         mixup_alpha=args.mixup_alpha,
         cutmix_alpha=args.cutmix_alpha,
         deterministic=args.deterministic,
+        early_stop_patience=args.early_stop_patience or None,
+        early_stop_min_delta=args.early_stop_min_delta,
     )
 
     trainer = WasteTrainer(train_cfg)
