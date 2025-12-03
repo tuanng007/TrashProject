@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple
 
+import numpy as np
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -62,6 +64,7 @@ class DataConfig:
     num_workers: int = 2
     use_blur: bool = False
     use_random_erasing: bool = False
+    seed: int = 42
 
 
 def default_transforms(
@@ -113,6 +116,13 @@ def create_dataloaders(
             use_blur=config.use_blur,
             use_random_erasing=config.use_random_erasing,
         )
+
+    generator = torch.Generator().manual_seed(config.seed)
+
+    def _worker_init_fn(worker_id: int):
+        np.random.seed(config.seed + worker_id)
+        random.seed(config.seed + worker_id)
+
     train_tf, val_tf, test_tf = transforms_fn(config.img_size)
     train_dataset = WasteDataset(config.train_dir, transform=train_tf)
     val_dataset = WasteDataset(
@@ -129,6 +139,8 @@ def create_dataloaders(
             shuffle=False,
             num_workers=config.num_workers,
             pin_memory=True,
+            generator=generator,
+            worker_init_fn=_worker_init_fn,
         )
 
     train_loader = DataLoader(
@@ -137,6 +149,8 @@ def create_dataloaders(
         shuffle=True,
         num_workers=config.num_workers,
         pin_memory=True,
+        generator=generator,
+        worker_init_fn=_worker_init_fn,
     )
     val_loader = DataLoader(
         val_dataset,
@@ -144,6 +158,8 @@ def create_dataloaders(
         shuffle=False,
         num_workers=config.num_workers,
         pin_memory=True,
+        generator=generator,
+        worker_init_fn=_worker_init_fn,
     )
 
     return train_loader, val_loader, test_loader, train_dataset.class_to_idx

@@ -14,6 +14,7 @@ from .dataset import create_dataloaders, DataConfig
 from .losses import LossConfig, build_loss
 from .optim import OptimConfig, SchedulerConfig, build_optimizer, build_scheduler
 from ..utils.metrics import accuracy, compute_classification_report, compute_confusion_matrix
+from ..utils.seed import seed_everything
 
 
 @dataclass
@@ -60,6 +61,7 @@ def build_model(name: str, num_classes: int) -> nn.Module:
 class WasteTrainer:
     def __init__(self, config: TrainConfig) -> None:
         self.config = config
+        seed_everything(config.data.seed)
         self.device = torch.device(config.device)
         (
             self.train_loader,

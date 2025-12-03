@@ -1,4 +1,4 @@
-"""CLI để huấn luyện mô hình phân loại rác thải trên máy cục bộ."""
+"""CLI training script for waste classification."""
 
 from __future__ import annotations
 
@@ -11,39 +11,46 @@ from src.training.dataset import DataConfig
 from src.training.losses import LossConfig
 from src.training.optim import OptimConfig, SchedulerConfig
 from src.training.trainer import TrainConfig, WasteTrainer
+from src.utils.seed import seed_everything
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train waste classifier locally.")
-    parser.add_argument("--train-dir", type=Path, required=True, help="Thư mục ảnh train.")
-    parser.add_argument("--val-dir", type=Path, required=True, help="Thư mục ảnh validation.")
-    parser.add_argument("--test-dir", type=Path, default=None, help="Thư mục ảnh test (tùy chọn).")
-    parser.add_argument("--img-size", type=int, default=224, help="Kích thước resize ảnh.")
+    parser.add_argument("--train-dir", type=Path, required=True, help="Folder with training images.")
+    parser.add_argument("--val-dir", type=Path, required=True, help="Folder with validation images.")
+    parser.add_argument("--test-dir", type=Path, default=None, help="Folder with test images (optional).")
+    parser.add_argument("--img-size", type=int, default=224, help="Resize image size.")
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size.")
-    parser.add_argument("--epochs", type=int, default=15, help="Số epoch huấn luyện.")
+    parser.add_argument("--epochs", type=int, default=15, help="Number of training epochs.")
     parser.add_argument(
         "--model",
         type=str,
         default="resnet18",
-        help="Tên mô hình (resnet18/mobilenetv3[large]/efficientnetb0/vitb16).",
+        help="Model name: resnet18/mobilenetv3[large]/efficientnetb0/vitb16.",
     )
-    parser.add_argument("--loss", type=str, default="cross_entropy", help="Loại loss (cross_entropy/focal).")
-    parser.add_argument("--use-blur", action="store_true", help="Bật Gaussian blur trong augmentation train.")
-    parser.add_argument("--use-random-erasing", action="store_true", help="Bật RandomErasing (Cutout) sau khi normalize.")
-    parser.add_argument("--use-mixup", action="store_true", help="Bật Mixup trong vòng lặp huấn luyện.")
-    parser.add_argument("--use-cutmix", action="store_true", help="Bật CutMix trong vòng lặp huấn luyện.")
-    parser.add_argument("--mixup-alpha", type=float, default=0.4, help="Tham số alpha cho Mixup.")
-    parser.add_argument("--cutmix-alpha", type=float, default=1.0, help="Tham số alpha cho CutMix.")
+    parser.add_argument("--loss", type=str, default="cross_entropy", help="Loss type: cross_entropy or focal.")
+    parser.add_argument("--use-blur", action="store_true", help="Enable Gaussian blur in train augmentation.")
+    parser.add_argument(
+        "--use-random-erasing",
+        action="store_true",
+        help="Enable RandomErasing (Cutout) after normalization.",
+    )
+    parser.add_argument("--use-mixup", action="store_true", help="Enable Mixup during training.")
+    parser.add_argument("--use-cutmix", action="store_true", help="Enable CutMix during training.")
+    parser.add_argument("--mixup-alpha", type=float, default=0.4, help="Alpha parameter for Mixup.")
+    parser.add_argument("--cutmix-alpha", type=float, default=1.0, help="Alpha parameter for CutMix.")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate.")
     parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay.")
-    parser.add_argument("--scheduler", type=str, default="onecycle", help="Scheduler (onecycle/cosine/step/none).")
-    parser.add_argument("--output-dir", type=Path, default=Path("artifacts"), help="Thư mục lưu checkpoint.")
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Thiết bị (cuda/cpu).")
+    parser.add_argument("--scheduler", type=str, default="onecycle", help="Scheduler: onecycle/cosine/step/none.")
+    parser.add_argument("--output-dir", type=Path, default=Path("artifacts"), help="Directory to save checkpoints.")
+    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use.")
+    parser.add_argument("--seed", type=int, default=42, help="Seed for reproducibility.")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    seed_everything(args.seed)
 
     data_cfg = DataConfig(
         train_dir=args.train_dir,
@@ -54,6 +61,7 @@ def main() -> None:
         num_workers=4,
         use_blur=args.use_blur,
         use_random_erasing=args.use_random_erasing,
+        seed=args.seed,
     )
 
     loss_cfg = LossConfig(name=args.loss)
