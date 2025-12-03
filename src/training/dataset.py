@@ -13,6 +13,8 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
+from ..utils.seed import DEFAULT_SEED
+
 
 class WasteDataset(Dataset):
     """Simple dataset that expects folder structure root/class_name/*.jpg."""
@@ -64,7 +66,7 @@ class DataConfig:
     num_workers: int = 2
     use_blur: bool = False
     use_random_erasing: bool = False
-    seed: int = 42
+    seed: int = DEFAULT_SEED
 
 
 def default_transforms(

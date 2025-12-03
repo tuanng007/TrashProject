@@ -7,8 +7,10 @@ import sys
 import numpy as np
 import torch
 
+DEFAULT_SEED = 42
 
-def seed_everything(seed: int = 42, deterministic: bool = True) -> None:
+
+def seed_everything(seed: int = DEFAULT_SEED, deterministic: bool = True) -> None:
     """Seed Python, NumPy, and PyTorch (CPU/CUDA).
 
     deterministic=True enforces deterministic algorithms; set False to avoid cuBLAS constraints.

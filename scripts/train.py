@@ -11,7 +11,7 @@ from src.training.dataset import DataConfig
 from src.training.losses import LossConfig
 from src.training.optim import OptimConfig, SchedulerConfig
 from src.training.trainer import TrainConfig, WasteTrainer
-from src.utils.seed import seed_everything
+from src.utils.seed import DEFAULT_SEED, seed_everything
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--scheduler", type=str, default="onecycle", help="Scheduler: onecycle/cosine/step/none.")
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts"), help="Directory to save checkpoints.")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use.")
-    parser.add_argument("--seed", type=int, default=42, help="Seed for reproducibility.")
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="Seed for reproducibility.")
     parser.add_argument(
         "--deterministic",
         dest="deterministic",

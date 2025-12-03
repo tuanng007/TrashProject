@@ -151,13 +151,15 @@ class WasteTrainer:
 
     def train(self) -> Tuple[Dict[str, float], Dict[str, float]]:
         best_acc = 0.0
-        history = {"train_loss": [], "val_loss": [], "val_acc": []}
+        history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": []}
         global_step = 0
         no_improve_epochs = 0
 
         for epoch in range(self.config.epochs):
             self.model.train()
             running_loss = 0.0
+            train_correct = 0
+            train_total = 0
             for batch_idx, (images, labels) in enumerate(self.train_loader):
                 images, labels = images.to(self.device), labels.to(self.device)
                 use_mixup = self.config.use_mixup and not self.config.use_cutmix
@@ -180,6 +182,9 @@ class WasteTrainer:
                 if self.scheduler and hasattr(self.scheduler, "step") and self.scheduler.__class__.__name__ == "OneCycleLR":
                     self.scheduler.step()
                 running_loss += loss.item()
+                preds = outputs.argmax(dim=1)
+                train_correct += (preds == labels).sum().item()
+                train_total += labels.size(0)
                 global_step += 1
                 if batch_idx % self.config.log_every == 0:
                     print(
@@ -192,8 +197,10 @@ class WasteTrainer:
                 self.scheduler.step()
 
             avg_train_loss = running_loss / len(self.train_loader)
+            avg_train_acc = train_correct / train_total if train_total else 0.0
             val_loss, val_acc = self.evaluate(split="val")
             history["train_loss"].append(avg_train_loss)
+            history["train_acc"].append(avg_train_acc)
             history["val_loss"].append(val_loss)
             history["val_acc"].append(val_acc)
             improved = val_acc > best_acc + self.config.early_stop_min_delta
