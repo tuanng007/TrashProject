@@ -45,12 +45,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts"), help="Directory to save checkpoints.")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use.")
     parser.add_argument("--seed", type=int, default=42, help="Seed for reproducibility.")
+    parser.add_argument(
+        "--deterministic",
+        dest="deterministic",
+        action="store_true",
+        help="Force deterministic algorithms (default).",
+    )
+    parser.add_argument(
+        "--no-deterministic",
+        dest="deterministic",
+        action="store_false",
+        help="Allow non-deterministic ops (avoid cuBLAS deterministic errors).",
+    )
+    parser.set_defaults(deterministic=True)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    seed_everything(args.seed)
+    seed_everything(args.seed, deterministic=args.deterministic)
 
     data_cfg = DataConfig(
         train_dir=args.train_dir,
@@ -81,6 +94,7 @@ def main() -> None:
         use_cutmix=args.use_cutmix,
         mixup_alpha=args.mixup_alpha,
         cutmix_alpha=args.cutmix_alpha,
+        deterministic=args.deterministic,
     )
 
     trainer = WasteTrainer(train_cfg)

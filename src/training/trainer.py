@@ -34,6 +34,7 @@ class TrainConfig:
     use_cutmix: bool = False
     mixup_alpha: float = 0.4
     cutmix_alpha: float = 1.0
+    deterministic: bool = True
 
 
 def build_model(name: str, num_classes: int) -> nn.Module:
@@ -61,7 +62,7 @@ def build_model(name: str, num_classes: int) -> nn.Module:
 class WasteTrainer:
     def __init__(self, config: TrainConfig) -> None:
         self.config = config
-        seed_everything(config.data.seed)
+        seed_everything(config.data.seed, deterministic=config.deterministic)
         self.device = torch.device(config.device)
         (
             self.train_loader,
