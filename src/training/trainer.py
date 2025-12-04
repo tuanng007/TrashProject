@@ -203,6 +203,11 @@ class WasteTrainer:
             history["train_acc"].append(avg_train_acc)
             history["val_loss"].append(val_loss)
             history["val_acc"].append(val_acc)
+            print(
+                f"[Epoch {epoch+1}/{self.config.epochs}] "
+                f"Train Loss: {avg_train_loss:.4f} | Train Acc: {avg_train_acc:.4f} | "
+                f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}"
+            )
             improved = val_acc > best_acc + self.config.early_stop_min_delta
             if improved:
                 best_acc = val_acc
