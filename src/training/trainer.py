@@ -280,6 +280,10 @@ class WasteTrainer:
             "epoch": epoch,
             "model_state": self.model.state_dict(),
             "optimizer_state": self.optimizer.state_dict(),
+            # Metadata for easier inference/demo without needing the training folder.
+            "class_to_idx": self.class_to_idx,
+            "model_name": self.config.model_name,
+            "img_size": self.config.data.img_size,
         }
         path = self.config.output_dir / ("best.pt" if best else f"epoch_{epoch+1}.pt")
         torch.save(state, path)

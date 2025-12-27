@@ -6,6 +6,7 @@ Chuc nang:
   giong pipeline huan luyen.
 - Cho phep nguoi dung upload anh va xem top-k lop duoc du doan.
 - Ho tro chon nhieu mo hinh trong UI de so sanh (artifacts/<model_name>/best.pt).
+- Neu checkpoint co kem 'class_to_idx' va 'model_name' thi khong can --train-dir.
 
 Vi du chay:
     # Single model (giong code cu)
@@ -13,6 +14,11 @@ Vi du chay:
         --train-dir data/train \\
         --checkpoint artifacts/best.pt \\
         --model resnet18
+
+    # Single model (checkpoint moi, khong can train-dir)
+    python -m scripts.demo_gradio \\
+        --checkpoint artifacts/best.pt \\
+        --model auto
 
     # Multi-model so sanh
     python -m scripts.demo_gradio \\
@@ -25,7 +31,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import gradio as gr
 from PIL import Image
@@ -51,8 +57,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        required=True,
-        help="Thu muc train (de suy ra danh sach lop).",
+        default=None,
+        help=(
+            "Thu muc train (de suy ra danh sach lop). "
+            "Co the bo qua neu checkpoint co san 'class_to_idx'."
+        ),
     )
     parser.add_argument(
         "--checkpoint",
@@ -64,7 +73,10 @@ def parse_args() -> argparse.Namespace:
         "--model",
         type=str,
         default="resnet18",
-        help="Ten mo hinh (resnet18/mobilenetv3/efficientnetb0/vitb16).",
+        help=(
+            "Ten mo hinh (resnet18/mobilenetv3/efficientnetb0/vitb16). "
+            "Dung 'auto' de lay tu checkpoint neu co."
+        ),
     )
     parser.add_argument(
         "--models",
@@ -117,20 +129,36 @@ def format_scores(probs: torch.Tensor, idx_to_class: Dict[int, str]) -> Dict[str
 
 
 def load_artifacts(
-    train_dir: Path,
+    train_dir: Optional[Path],
     checkpoint: Path,
     model_name: str,
     img_size: int,
-    device: str,
+    device: torch.device,
 ) -> Tuple[torch.nn.Module, callable, Dict[int, str]]:
-    # Suy ra mapping lop tu thu muc train
-    dataset = WasteDataset(train_dir)
-    idx_to_class = {idx: cls for cls, idx in dataset.class_to_idx.items()}
+    state = torch.load(checkpoint, map_location=device)
+
+    class_to_idx = None
+    if isinstance(state, dict) and "class_to_idx" in state:
+        class_to_idx = state["class_to_idx"]
+    if not class_to_idx:
+        if train_dir is None:
+            raise ValueError(
+                "Can --train-dir de suy ra danh sach lop, "
+                "hoac dung checkpoint moi co san 'class_to_idx'."
+            )
+        dataset = WasteDataset(train_dir)
+        class_to_idx = dataset.class_to_idx
+
+    idx_to_class = {idx: cls for cls, idx in class_to_idx.items()}
     num_classes = len(idx_to_class)
+
+    if model_name.strip().lower() == "auto":
+        if not (isinstance(state, dict) and state.get("model_name")):
+            raise ValueError("Checkpoint khong co 'model_name'; hay truyen --model.")
+        model_name = str(state["model_name"])
 
     # Build model va load weights
     model = build_model(model_name, num_classes)
-    state = torch.load(checkpoint, map_location=device)
     if isinstance(state, dict) and "model_state" in state:
         model.load_state_dict(state["model_state"])
     else:
@@ -254,4 +282,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
